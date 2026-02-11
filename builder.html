@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FluxRB | Ultimate Script Builder PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #080808; color: #e4e4e7; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+        .canvas-area { background-image: radial-gradient(#1a1a1a 1px, transparent 1px); background-size: 20px 20px; }
+        .panel { background: #111111; border: 1px solid #27272a; }
+        .flux-bg-accent { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+        .element-card { transition: all 0.2s; border: 1px solid #1f1f22; background: #161618; }
+        .element-card:hover { border-color: #6366f1; transform: scale(1.01); }
+        .active-tab { background: #6366f1; color: white; }
+        .preset-btn { border: 1px dashed #3f3f46; transition: all 0.2s; cursor: pointer; }
+        .preset-btn:hover { border-style: solid; border-color: #fbbf24; color: #fbbf24; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        .donate-gradient { background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); }
+    </style>
+</head>
+<body>
+    <div class="flex flex-col h-screen">
+        <header class="h-14 border-b border-zinc-800 bg-[#111] flex items-center justify-between px-6 shrink-0">
+            <div class="flex items-center gap-4">
+                <span class="font-black text-indigo-500 tracking-tighter text-2xl italic uppercase">Flux<span class="text-white">RB</span></span>
+                <span class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2 py-0.5 rounded border border-indigo-500/20 font-bold uppercase tracking-widest">v1.8 PRO</span>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800 mr-2">
+                    <button onclick="setLang('ru')" id="btn-ru" class="px-3 py-1 text-[10px] font-bold rounded transition">RU</button>
+                    <button onclick="setLang('en')" id="btn-en" class="px-3 py-1 text-[10px] font-bold rounded transition">EN</button>
+                </div>
+                <button onclick="toggleCode()" id="exportBtn" class="flux-bg-accent hover:opacity-90 px-6 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition shadow-lg shadow-indigo-500/30">
+                    Get Lua Code
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <div class="w-72 panel border-y-0 border-l-0 p-5 shrink-0 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                <div>
+                    <h2 id="ui-tools-label" class="text-[10px] font-black text-zinc-500 uppercase mb-3 tracking-widest">UI Tools</h2>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button onclick="addElement('Button')" class="element-card p-3 rounded-lg text-left text-sm flex items-center gap-3">
+                            <span class="text-indigo-500">🔘</span> <span data-t="btn">Button</span>
+                        </button>
+                        <button onclick="addElement('Toggle')" class="element-card p-3 rounded-lg text-left text-sm flex items-center gap-3">
+                            <span class="text-emerald-500">🔌</span> <span data-t="tgl">Toggle</span>
+                        </button>
+                        <button onclick="addElement('Slider')" class="element-card p-3 rounded-lg text-left text-sm flex items-center gap-3">
+                            <span class="text-amber-500">🎚️</span> <span data-t="sld">Slider</span>
+                        </button>
+                        <button onclick="addElement('Dropdown')" class="element-card p-3 rounded-lg text-left text-sm flex items-center gap-3">
+                            <span class="text-purple-500">📜</span> <span data-t="drp">Dropdown</span>
+                        </button>
+                        <button onclick="addElement('ColorPicker')" class="element-card p-3 rounded-lg text-left text-sm flex items-center gap-3">
+                            <span class="text-pink-500">🎨</span> <span data-t="clr">Color Picker</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 id="presets-label" class="text-[10px] font-black text-yellow-500/70 uppercase mb-3 tracking-widest">Presets</h2>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button onclick="addPreset('Fly')" class="preset-btn p-3 rounded-lg bg-zinc-900/50 text-left text-xs flex items-center gap-3">
+                            <span>🚀</span> Fly Script
+                        </button>
+                        <button onclick="addPreset('Speed')" class="preset-btn p-3 rounded-lg bg-zinc-900/50 text-left text-xs flex items-center gap-3">
+                            <span>⚡</span> WalkSpeed
+                        </button>
+                        <button onclick="addPreset('Noclip')" class="preset-btn p-3 rounded-lg bg-zinc-900/50 text-left text-xs flex items-center gap-3">
+                            <span>👻</span> Noclip
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="main-content" class="flex-1 flex overflow-hidden">
+                <div id="canvas-view" class="flex-1 canvas-area p-8 flex justify-center items-start overflow-auto custom-scrollbar">
+                    <div class="w-full max-w-2xl panel rounded-2xl shadow-2xl overflow-hidden min-h-[450px] border-zinc-800">
+                        <div class="bg-[#1a1a1a] px-5 py-3 border-b border-zinc-800 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                                <span id="window-title-display" class="text-xs font-bold text-zinc-400 italic tracking-tight uppercase tracking-widest">FluxRB Engine</span>
+                            </div>
+                        </div>
+                        <div class="flex h-[450px]">
+                            <div id="tabs-list" class="w-36 border-r border-zinc-800 p-2 space-y-1 bg-[#0d0d0d]"></div>
+                            <div id="elements-list" class="flex-1 p-5 space-y-3 overflow-y-auto custom-scrollbar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="code-view" class="hidden flex-1 bg-[#050505] p-8 overflow-auto font-mono">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[10px] text-zinc-500 font-black uppercase tracking-[0.3em]">FluxRB Source (Pastebin Link)</span>
+                        <button onclick="copyCode()" id="copy-btn-text" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-xs font-bold transition">Copy Lua</button>
+                    </div>
+                    <pre id="lua-output" class="text-indigo-300 text-[11px] leading-relaxed"></pre>
+                </div>
+            </div>
+
+            <div class="w-72 panel border-y-0 border-r-0 p-6 shrink-0 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                
+                <div class="donate-gradient border border-yellow-500/20 rounded-xl p-4 flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">☕</span>
+                        <h2 class="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Buy me a coffee</h2>
+                    </div>
+                    <p id="donate-desc" class="text-[10px] text-zinc-400 leading-tight">Support FluxRB development. Your contribution speeds up updates!</p>
+                    <div class="mt-2">
+                        <label class="text-[8px] text-zinc-500 font-bold uppercase block mb-1">USDT TRC20 Address:</label>
+                        <div onclick="copyToClipboard('TDZq7Y3rMG2Xy3uY59xLSjWq3pSo2Uxnag')" class="bg-black/40 border border-zinc-800 rounded p-2 text-[9px] font-mono text-indigo-300 cursor-pointer hover:border-indigo-500 transition break-all">
+                            TDZq7Y3rMG2Xy3uY59xLSjWq3pSo2Uxnag
+                        </div>
+                    </div>
+                </div>
+
+                <h2 id="global-settings-label" class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Settings</h2>
+                
+                <div>
+                    <label id="label-win-title" class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Window Title</label>
+                    <input type="text" id="win-title-input" oninput="updateWinTitle(this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-xs outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label id="label-theme" class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">UI Theme</label>
+                    <select id="theme-select" onchange="project.theme = this.value; save();" class="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-xs outline-none focus:border-indigo-500">
+                        <option value="Dark">Classic Dark</option>
+                        <option value="Midnight">Midnight Blue</option>
+                        <option value="Sakura">Sakura Pink</option>
+                    </select>
+                </div>
+
+                <div id="el-props-area" class="pt-6 border-t border-zinc-800 hidden flex flex-col gap-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const i18n = {
+            ru: {
+                getLua: "Получить Lua Код",
+                back: "Вернуться в Builder",
+                uiTools: "Инструменты UI",
+                presets: "Пресеты (Скрипты)",
+                globalSettings: "Глобальные настройки",
+                winTitle: "Заголовок окна",
+                uiTheme: "Тема оформления",
+                donate: "Поддержи разработку FluxRB. Твой вклад ускоряет выход обновлений!",
+                addTab: "+ ДОБАВИТЬ TAB",
+                tabPrompt: "Название вкладки:",
+                newElement: "Новый ",
+                properties: "Свойства: ",
+                elName: "Имя элемента",
+                delete: "Удалить элемент",
+                copyLua: "Копировать Lua",
+                copied: "Lua код скопирован!",
+                donateCopied: "USDT Address скопирован! Спасибо ❤️",
+                dropdownList: "Список (через запятую)",
+                btn: "Кнопка", tgl: "Переключатель", sld: "Слайдер", drp: "Выпадающий список", clr: "Выбор цвета"
+            },
+            en: {
+                getLua: "Get Lua Code",
+                back: "Back to Builder",
+                uiTools: "UI Tools",
+                presets: "Presets (Scripts)",
+                globalSettings: "Global Settings",
+                winTitle: "Window Title",
+                uiTheme: "UI Theme",
+                donate: "Support FluxRB development. Your contribution speeds up updates!",
+                addTab: "+ ADD TAB",
+                tabPrompt: "Tab Name:",
+                newElement: "New ",
+                properties: "Properties: ",
+                elName: "Element Name",
+                delete: "Delete Element",
+                copyLua: "Copy Lua",
+                copied: "Lua code copied!",
+                donateCopied: "USDT Address copied! Thanks ❤️",
+                dropdownList: "List (comma separated)",
+                btn: "Button", tgl: "Toggle", sld: "Slider", drp: "Dropdown", clr: "Color Picker"
+            }
+        };
+
+        let currentLang = localStorage.getItem('flux_lang') || 'ru';
+
+        let project = JSON.parse(localStorage.getItem('flux_v18_save')) || {
+            title: "FluxRB Hub",
+            theme: "Dark",
+            tabs: [{ id: 1, name: "Main", elements: [] }],
+            activeTabId: 1,
+            selectedId: null
+        };
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('flux_lang', lang);
+            updateInterface();
+        }
+
+        function updateInterface() {
+            const t = i18n[currentLang];
+            document.getElementById('exportBtn').innerText = document.getElementById('canvas-view').classList.contains('hidden') ? t.back : t.getLua;
+            document.getElementById('ui-tools-label').innerText = t.uiTools;
+            document.getElementById('presets-label').innerText = t.presets;
+            document.getElementById('global-settings-label').innerText = t.globalSettings;
+            document.getElementById('label-win-title').innerText = t.winTitle;
+            document.getElementById('label-theme').innerText = t.uiTheme;
+            document.getElementById('donate-desc').innerText = t.donate;
+            document.getElementById('copy-btn-text').innerText = t.copyLua;
+
+            // Update static buttons
+            document.querySelectorAll('[data-t]').forEach(el => {
+                el.innerText = t[el.getAttribute('data-t')];
+            });
+
+            // Update lang buttons style
+            document.getElementById('btn-ru').className = `px-3 py-1 text-[10px] font-bold rounded transition ${currentLang === 'ru' ? 'bg-indigo-600 text-white' : 'text-zinc-500 hover:text-white'}`;
+            document.getElementById('btn-en').className = `px-3 py-1 text-[10px] font-bold rounded transition ${currentLang === 'en' ? 'bg-indigo-600 text-white' : 'text-zinc-500 hover:text-white'}`;
+            
+            render();
+        }
+
+        function save() {
+            localStorage.setItem('flux_v18_save', JSON.stringify(project));
+            render();
+        }
+
+        function updateWinTitle(val) {
+            project.title = val;
+            document.getElementById('window-title-display').innerText = val;
+            save();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert(i18n[currentLang].donateCopied);
+        }
+
+        function addTab() {
+            const name = prompt(i18n[currentLang].tabPrompt, "New Tab");
+            if(name) {
+                const id = Date.now();
+                project.tabs.push({ id, name, elements: [] });
+                project.activeTabId = id;
+                save();
+            }
+        }
+
+        function addElement(type) {
+            const tab = project.tabs.find(t => t.id === project.activeTabId);
+            const id = Math.random().toString(36).substr(2, 9);
+            let extra = {};
+            if(type === 'Dropdown') extra.list = "Option 1, Option 2, Option 3";
+            
+            tab.elements.push({ id, type, name: i18n[currentLang].newElement + type, preset: null, ...extra });
+            project.selectedId = id;
+            save();
+        }
+
+        function addPreset(type) {
+            const tab = project.tabs.find(t => t.id === project.activeTabId);
+            const id = Math.random().toString(36).substr(2, 9);
+            let elType = (type === 'Speed') ? 'Slider' : 'Toggle';
+            tab.elements.push({ id, type: elType, name: type + " Hack", preset: type });
+            project.selectedId = id;
+            save();
+        }
+
+        function render() {
+            const t = i18n[currentLang];
+            const tabsList = document.getElementById('tabs-list');
+            tabsList.innerHTML = `<button onclick="addTab()" class="w-full py-2 border border-dashed border-zinc-800 text-[9px] text-zinc-600 hover:text-zinc-400 rounded-lg mb-2 transition">${t.addTab}</button>`;
+            
+            project.tabs.forEach(tab => {
+                const btn = document.createElement('button');
+                btn.className = `w-full px-3 py-2 rounded-lg text-left text-[10px] font-bold transition-all uppercase ${project.activeTabId === tab.id ? 'active-tab shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:bg-zinc-900'}`;
+                btn.innerText = tab.name;
+                btn.onclick = () => { project.activeTabId = tab.id; project.selectedId = null; save(); };
+                tabsList.appendChild(btn);
+            });
+
+            const elList = document.getElementById('elements-list');
+            elList.innerHTML = '';
+            const activeTab = project.tabs.find(tab => tab.id === project.activeTabId);
+            
+            activeTab.elements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-xl border flex items-center justify-between cursor-pointer element-card ${project.selectedId === el.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-zinc-800'}`;
+                div.innerHTML = `<div><div class="text-[8px] text-zinc-600 font-black uppercase mb-1">${el.type}${el.preset ? ' (PRESET)' : ''}</div><div class="text-xs font-bold text-zinc-200">${el.name}</div></div><div class="w-1.5 h-1.5 rounded-full ${project.selectedId === el.id ? 'bg-indigo-500' : 'bg-zinc-800'}"></div>`;
+                div.onclick = () => { project.selectedId = el.id; render(); };
+                elList.appendChild(div);
+            });
+
+            const props = document.getElementById('el-props-area');
+            const selEl = activeTab.elements.find(e => e.id === project.selectedId);
+            
+            if(selEl) {
+                props.classList.remove('hidden');
+                let extraHtml = '';
+                if(selEl.type === 'Dropdown') {
+                    extraHtml = `<div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">${t.dropdownList}</label>
+                                 <input type="text" value="${selEl.list}" oninput="updateElExtra('${selEl.id}', 'list', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-xs text-white outline-none focus:border-indigo-500"></div>`;
+                }
+                props.innerHTML = `
+                    <h2 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">${t.properties}${selEl.type}</h2>
+                    <div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">${t.elName}</label>
+                    <input type="text" value="${selEl.name}" oninput="updateElName('${selEl.id}', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded p-2.5 text-xs text-white outline-none focus:border-indigo-500"></div>
+                    ${extraHtml}
+                    <button onclick="deleteEl('${selEl.id}')" class="w-full py-2.5 mt-2 text-[10px] text-red-500 border border-red-500/20 hover:bg-red-500/10 rounded font-bold uppercase tracking-widest transition">${t.delete}</button>
+                `;
+            } else { props.classList.add('hidden'); }
+            
+            document.getElementById('win-title-input').value = project.title;
+            document.getElementById('theme-select').value = project.theme;
+        }
+
+        function updateElName(id, val) {
+            const tab = project.tabs.find(t => t.id === project.activeTabId);
+            const el = tab.elements.find(e => e.id === id);
+            el.name = val;
+            localStorage.setItem('flux_v18_save', JSON.stringify(project));
+            render();
+        }
+
+        function updateElExtra(id, key, val) {
+            const tab = project.tabs.find(t => t.id === project.activeTabId);
+            const el = tab.elements.find(e => e.id === id);
+            el[key] = val;
+            localStorage.setItem('flux_v18_save', JSON.stringify(project));
+        }
+
+        function deleteEl(id) {
+            const tab = project.tabs.find(t => t.id === project.activeTabId);
+            tab.elements = tab.elements.filter(e => e.id !== id);
+            project.selectedId = null;
+            save();
+        }
+
+        function toggleCode() {
+            const cv = document.getElementById('canvas-view');
+            const codev = document.getElementById('code-view');
+            const btn = document.getElementById('exportBtn');
+            const t = i18n[currentLang];
+
+            if(cv.classList.contains('hidden')) {
+                cv.classList.remove('hidden'); codev.classList.add('hidden');
+                btn.innerText = t.getLua;
+            } else {
+                cv.classList.add('hidden'); codev.classList.remove('hidden');
+                btn.innerText = t.back;
+                generateLua();
+            }
+        }
+
+        function generateLua() {
+            let lua = `-- FluxRB PRO Builder [v1.8]\n`;
+            lua += `-- Library Source: Pastebin\n\n`;
+            lua += `local FluxRB = loadstring(game:HttpGet('https://pastebin.com/raw/weJFYjM5'))()\n\n`;
+            lua += `local Main = FluxRB:Init({\n    Name = "${project.title}",\n    Theme = "${project.theme}"\n})\n\n`;
+
+            project.tabs.forEach(tab => {
+                const tVar = tab.name.replace(/\s+/g, "");
+                lua += `local ${tVar} = Main:CreateTab("${tab.name}")\n`;
+                tab.elements.forEach(el => {
+                    if(el.preset === 'Fly') {
+                        lua += `${tVar}:AddToggle("${el.name}", false, function(v) _G.Fly = v; loadstring(game:HttpGet("https://raw.githubusercontent.com/FluxRB/Scripts/main/Fly.lua"))() end)\n`;
+                    } else if(el.preset === 'Speed') {
+                        lua += `${tVar}:AddSlider("${el.name}", 16, 500, 16, function(v) game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v end)\n`;
+                    } else if(el.preset === 'Noclip') {
+                        lua += `${tVar}:AddToggle("${el.name}", false, function(v) _G.Noclip = v end)\n`;
+                    } else if(el.type === 'Button') {
+                        lua += `${tVar}:AddButton("${el.name}", function()\n    FluxRB:Notify("FluxRB", "Clicked ${el.name}", 3)\nend)\n`;
+                    } else if(el.type === 'Slider') {
+                        lua += `${tVar}:AddSlider("${el.name}", 0, 100, 50, function(v) print(v) end)\n`;
+                    } else if(el.type === 'Dropdown') {
+                        const items = el.list.split(',').map(s => `"${s.trim()}"`).join(', ');
+                        lua += `${tVar}:AddDropdown("${el.name}", {${items}}, function(val) print("Selected: " .. val) end)\n`;
+                    } else if(el.type === 'ColorPicker') {
+                        lua += `${tVar}:AddColorPicker("${el.name}", Color3.fromRGB(99, 102, 241), function(color) print(tostring(color)) end)\n`;
+                    } else {
+                        lua += `${tVar}:AddToggle("${el.name}", false, function(v) end)\n`;
+                    }
+                });
+                lua += `\n`;
+            });
+            document.getElementById('lua-output').textContent = lua;
+        }
+
+        function copyCode() {
+            const text = document.getElementById('lua-output').textContent;
+            navigator.clipboard.writeText(text);
+            alert(i18n[currentLang].copied);
+        }
+
+        // Initialize
+        updateInterface();
+    </script>
+</body>
+</html>
